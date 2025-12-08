@@ -1,8 +1,8 @@
-![clover](https://github.com/user-attachments/assets/3ca7d1a4-cb76-4bd1-8a91-61441ca338c3)
+![wojak](https://github.com/user-attachments/assets/3ca7d1a4-cb76-4bd1-8a91-61441ca338c3)
 
-# FeelingSats
+# WojakCoin Indexer
 
-Feelingsats is an indexer that creates a queryable dataset for XBT.
+WojakCoin Indexer (based on FeelingSats) creates a queryable dataset for WojakCoin blockchain.
 
 
 
@@ -27,9 +27,9 @@ check agains thtis by seeing if the error key is present in the response.
 
 #### GET /block/{blocknumber}
 
-Get LKY block information by block number
+Get WojakCoin block information by block number
 
-https://feelingsats.satsignal.io/block/50
+https://wojak-indexer.example.com/block/50
 
 success respose: 200
 
@@ -67,7 +67,7 @@ success respose: 200
             "hex": "2103f05ad912e322ab5e74ee57c1264540bde65db5154a536fe19999d31a65aaedb2ac",
             "reqSigs": 1,
             "type": "pubkey",
-            "addresses": ["LFz5TDhuxN8oejDvGtaGCJDTwbEW3Py2zY"]
+            "addresses": ["WkAVjvXbDx3KH5TAAPYx"]
           }
         }
       ],
@@ -89,9 +89,9 @@ success respose: 200
 
 #### POST /transaction/broadcast
 
-Broadcast a signed transaction on xbt network
+Broadcast a signed transaction on WojakCoin network
 
-https://feelingsats.satsignal.io/transaction/broadcast
+https://wojak-indexer.example.com/transaction/broadcast
 
 success respose: 200
 
@@ -107,14 +107,14 @@ success respose: 200
 
 Get all UTXOs for a given address
 
-https://feelingsats.satsignal.io/utxos/all_by_address/LHCRZRAXDpQfnwZMBs9Fcjx7ZfGecQdjEy
+https://wojak-indexer.example.com/utxos/all_by_address/WkAVjvXbDx3KH5TAAPYx
 
 ```json
 [
   {
     "txid": "3e72ca01728d0535755f66a3a6063316f4919fe54a5f4e3707c23b54ba18e5c7",
     "vout": 1,
-    "address": "LHCRZRAXDpQfnwZMBs9Fcjx7ZfGecQdjEy",
+    "address": "WkAVjvXbDx3KH5TAAPYx",
     "amount": "899995000",
     "hex": "0200000001c49f450f97cecce93778dbfd16967084825a6e866c0bcc5cb49270cf7eb50d9d010000006b483045022100905c3dbde5ac8b78fb943a1496ef6d5884ef382dfa5f3341107b72f07f833c2902207142ba2c435723db7e65c658dee5e529426697a15b1e0cc67208c59f275c690b0121022e15e6c680395fac7d8f0b4936cc57ed00e859aa835dbb1b62c59b9d7fc3d16bffffffff0200e1f505000000001976a91440c16e5067810f625bfa80be1181422acfe476a388ac78d5a435000000001976a914e9c5b3dcb4db556e185a89825e9190bec6ecf63388ac00000000",
     "block": 163377,
@@ -127,14 +127,14 @@ https://feelingsats.satsignal.io/utxos/all_by_address/LHCRZRAXDpQfnwZMBs9Fcjx7Zf
 
 Fetch relevant utxos for a given address and amount. Used for creating a transaction and wallet management.
 
-https://feelingsats.satsignal.io/utxos/fetch_by_address/LHCRZRAXDpQfnwZMBs9Fcjx7ZfGecQdjEy/500
+https://wojak-indexer.example.com/utxos/fetch_by_address/WkAVjvXbDx3KH5TAAPYx/500
 
 ```json
 [
   {
     "txid": "3e72ca01728d0535755f66a3a6063316f4919fe54a5f4e3707c23b54ba18e5c7",
     "vout": 1,
-    "address": "LHCRZRAXDpQfnwZMBs9Fcjx7ZfGecQdjEy",
+    "address": "WkAVjvXbDx3KH5TAAPYx",
     "amount": "899995000",
     "hex": "0200000001c49f450f97cecce93778dbfd16967084825a6e866c0bcc5cb49270cf7eb50d9d010000006b483045022100905c3dbde5ac8b78fb943a1496ef6d5884ef382dfa5f3341107b72f07f833c2902207142ba2c435723db7e65c658dee5e529426697a15b1e0cc67208c59f275c690b0121022e15e6c680395fac7d8f0b4936cc57ed00e859aa835dbb1b62c59b9d7fc3d16bffffffff0200e1f505000000001976a91440c16e5067810f625bfa80be1181422acfe476a388ac78d5a435000000001976a914e9c5b3dcb4db556e185a89825e9190bec6ecf63388ac00000000",
     "block": 163377,

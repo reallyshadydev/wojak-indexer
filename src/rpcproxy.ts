@@ -10,7 +10,6 @@ import axios, { AxiosError } from "axios";
 
 const requiredEnvFields = [
   "NODE_RPC_URL",
-  "NODE_RPC_COOKIE_PATH",
   "HTTP_PROXY_PORT",
   "TCP_PROXY_PORT",
 ];
@@ -20,23 +19,27 @@ export const createRpcProxy = (db: Models) => {
     return;
   }
 
-  const COOKIE_FILE_PATH = path.resolve(
-    process.env.NODE_RPC_COOKIE_PATH! || "/root/.luckycoin/.cookie"
-  );
-
-  // Function to read and encode the cookie file
-  function getAuthHeader(cookieFilePath: string): string {
+  // Function to get auth header from username/password or cookie
+  function getAuthHeader(): string {
+    // Try username/password first (WojakCoin uses this)
+    if (process.env.NODE_RPC_USER && process.env.NODE_RPC_PASSWORD) {
+      const credentials = `${process.env.NODE_RPC_USER}:${process.env.NODE_RPC_PASSWORD}`;
+      return `Basic ${Buffer.from(credentials).toString("base64")}`;
+    }
+    
+    // Fallback to cookie file if available
+    const cookiePath = process.env.NODE_RPC_COOKIE_PATH || "/root/.wojakcoin/.cookie";
     try {
-      const cookie = fs.readFileSync(cookieFilePath, "utf-8").trim();
+      const cookie = fs.readFileSync(path.resolve(cookiePath), "utf-8").trim();
       return `Basic ${Buffer.from(cookie).toString("base64")}`;
     } catch (error) {
       console.error("Error reading the cookie file:", error);
-      process.exit(1);
+      throw new Error("No RPC authentication method found. Set NODE_RPC_USER and NODE_RPC_PASSWORD or NODE_RPC_COOKIE_PATH");
     }
   }
 
-  const AUTH_HEADER = getAuthHeader(COOKIE_FILE_PATH);
-  const NODE_RPC_URL = process.env.NODE_RPC_URL! || "http://127.0.0.1:19918";
+  const AUTH_HEADER = getAuthHeader();
+  const NODE_RPC_URL = process.env.NODE_RPC_URL! || "http://127.0.0.1:20760";
 
   // Create an HTTP proxy server
   const proxy = httpProxy.createProxyServer({
@@ -74,7 +77,7 @@ export const createRpcProxy = (db: Models) => {
   const HTTP_PORT = process.env.HTTP_PROXY_PORT || 9922;
   server.listen(HTTP_PORT, () => {
     console.log(`HTTP proxy server running on port ${HTTP_PORT}`);
-    console.log(`Using cookie file at: ${COOKIE_FILE_PATH}`);
+    console.log(`Proxying to: ${NODE_RPC_URL}`);
   });
 
   // Create a TCP server for TCP connections

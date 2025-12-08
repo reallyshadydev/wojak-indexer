@@ -5,24 +5,35 @@ import { BlockData, Transaction } from "./types";
 import { Transaction as BitcoinJsTransaction } from "bitcoinjs-lib";
 import { FullTransaction, FullAPIError } from "./types";
 
-export const XbtNetwork = {
-  messagePrefix: "\u0018Xbt Signed Message:\n",
-  bech32: "bc1",
+export const WojakCoinNetwork = {
+  messagePrefix: "\u0018WojakCoin Signed Message:\n",
+  bech32: "wojak",
   bip32: {
     public: 0x0488b21e,
     private: 0x0488ade4,
   },
-  pubKeyHash: 0,
-  scriptHash: 5,
-  wif: 128,
+  pubKeyHash: 73, // W prefix for WojakCoin
+  scriptHash: 50, // X prefix for WojakCoin
+  wif: 201, // WojakCoin WIF prefix
 };
 
-// ✅ Utility: Read cookie and return auth header
-const getCookieAuthHeader = (): string => {
-  const cookiePath = process.env.RPC_COOKIE_PATH ?? "/root/.bitcoin/.cookie";
+// ✅ Utility: Get auth header from username/password or cookie
+const getAuthHeader = (): string => {
+  // Try username/password first (WojakCoin uses this)
+  if (process.env.RPC_USER && process.env.RPC_PASSWORD) {
+    const credentials = `${process.env.RPC_USER}:${process.env.RPC_PASSWORD}`;
+    return `Basic ${Buffer.from(credentials).toString("base64")}`;
+  }
+  
+  // Fallback to cookie file if available
+  const cookiePath = process.env.RPC_COOKIE_PATH ?? "/root/.wojakcoin/.cookie";
+  try {
   const cookie = fs.readFileSync(path.resolve(cookiePath), "utf8").trim();
   const encoded = Buffer.from(cookie).toString("base64");
   return `Basic ${encoded}`;
+  } catch (e) {
+    throw new Error("No RPC authentication method found. Set RPC_USER and RPC_PASSWORD or RPC_COOKIE_PATH");
+  }
 };
 
 export const txJsonToHex = (tx: Transaction): string => {
@@ -71,7 +82,7 @@ export const getBlock = async (
     throw new Error("RPC_BASE_URL is not defined");
   }
 
-  const auth = getCookieAuthHeader();
+  const auth = getAuthHeader();
 
   try {
     const { data: blockHashResponse } = await axios.post(
@@ -98,7 +109,7 @@ export const getBlock = async (
         jsonrpc: "1.0",
         id: "getblock",
         method: "getblock",
-        params: [blockHash, true],
+        params: [blockHash, true], // Use true for verbose (full transaction details) - WojakCoin format
       },
       {
         headers: {
@@ -113,9 +124,23 @@ export const getBlock = async (
 
     const blockData = blockResponse.result;
 
+    // With verbosity=2, transactions are in 'tx' field for WojakCoin (standard Bitcoin format)
+    const transactions = blockData.tx || blockData.rawtx || [];
+
     const fullTxs: FullTransaction[] = [];
 
-    for (const txid of blockData.tx as string[]) {
+    // If rawtx contains full transactions, use them directly
+    if (transactions.length > 0 && typeof transactions[0] === 'object' && 'vout' in transactions[0]) {
+      // Transactions are already full, add rawHex if not present
+      for (const tx of transactions as any[]) {
+        if (!tx.rawHex) {
+          tx.rawHex = txJsonToHex(tx as Transaction);
+        }
+        fullTxs.push(tx as FullTransaction);
+      }
+    } else {
+      // Otherwise, decode each transaction
+      for (const txid of transactions as string[]) {
       try {
         const { data: txResponse } = await axios.post(
           rpcBaseURL,
@@ -135,6 +160,7 @@ export const getBlock = async (
         fullTxs.push(txResponse.result as FullTransaction);
       } catch (e: unknown) {
         continue;
+        }
       }
     }
 
@@ -160,7 +186,7 @@ export const pushTx = async (
     throw new Error("RPC_BASE_URL is not defined");
   }
 
-  const auth = getCookieAuthHeader();
+  const auth = getAuthHeader();
 
   try {
     const { data } = await axios.post(

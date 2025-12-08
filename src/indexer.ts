@@ -41,11 +41,17 @@ const getNewUtxosFromBlock = (block: BlockData<FullTransaction>): UTXO[] => {
 
   for (const transaction of block.tx) {
     for (const vout of transaction.vout) {
+      // Only index UTXOs with valid addresses - ignore outputs without addresses (e.g., OP_RETURN, invalid scripts)
+      const address = vout.scriptPubKey?.addresses?.[0];
+      if (!address || address.trim() === "") {
+        continue; // Skip outputs without valid addresses (change outputs to invalid addresses)
+      }
+
       utxos.push({
         txid: transaction.txid,
         vout: vout.n,
-        address: vout.scriptPubKey?.addresses?.[0] ?? "",
-        amount: Math.round(vout.value * 1e8).toString(),
+        address: address,
+        amount: Math.round(vout.value * 1e8).toString(), // WojakCoin uses 1e8 like Bitcoin
         hex: transaction.rawHex,
         block: block.height,
         block_hash: block.hash,
@@ -143,11 +149,15 @@ export const runIndexer = async (models: Models) => {
       const blockargs = await createBlockArgs(currentBlockNum);
 
       if (blockargs.add_utxos.length > 0) {
-        await models.Utxo.bulkCreate(blockargs.add_utxos, {
-          updateOnDuplicate: Object.keys(
-            models.Utxo.getAttributes()
-          ) as (keyof UTXO)[],
-        });
+        // Filter out UTXOs with empty/invalid addresses before storing
+        const validUtxos = blockargs.add_utxos.filter(utxo => utxo.address && utxo.address.trim() !== "");
+        if (validUtxos.length > 0) {
+          await models.Utxo.bulkCreate(validUtxos, {
+            updateOnDuplicate: Object.keys(
+              models.Utxo.getAttributes()
+            ) as (keyof UTXO)[],
+          });
+        }
       }
 
       if (blockargs.delete_utxos.length > 0) {

@@ -3,4 +3,8 @@ package-lock.json
 .env
 dumps/
 .yarn
-yarn.lock
+yarn.locknode_modules/
+.env
+*.log
+dist/
+.DS_Store
