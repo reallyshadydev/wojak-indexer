@@ -109,7 +109,7 @@ export const getBlock = async (
         jsonrpc: "1.0",
         id: "getblock",
         method: "getblock",
-        params: [blockHash, true], // Use true for verbose (full transaction details) - WojakCoin format
+        params: [blockHash, true], // true = verbose (full block with tx details)
       },
       {
         headers: {
@@ -148,7 +148,7 @@ export const getBlock = async (
             jsonrpc: "1.0",
             id: "getrawtransaction",
             method: "getrawtransaction",
-            params: [txid, 1],
+            params: [txid, 1], // 1 = verbose (WojakCoin RPC expects integer)
           },
           {
             headers: {
@@ -173,7 +173,10 @@ export const getBlock = async (
 
     return blockData as BlockData<FullTransaction>;
   } catch (e: unknown) {
-    throw "Error fetching block";
+    const msg = e && typeof e === "object" && "response" in e
+      ? JSON.stringify((e as { response?: { data?: unknown } }).response?.data)
+      : String(e);
+    throw new Error(`Error fetching block ${blockNumber}: ${msg}`);
   }
 };
 

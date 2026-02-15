@@ -42,7 +42,7 @@ const getNewUtxosFromBlock = (block: BlockData<FullTransaction>): UTXO[] => {
   for (const transaction of block.tx) {
     for (const vout of transaction.vout) {
       // Only index UTXOs with valid addresses - ignore outputs without addresses (e.g., OP_RETURN, invalid scripts)
-      const address = vout.scriptPubKey?.addresses?.[0];
+      const address = vout.scriptPubKey?.addresses?.[0] ?? (vout.scriptPubKey as any)?.address;
       if (!address || address.trim() === "") {
         continue; // Skip outputs without valid addresses (change outputs to invalid addresses)
       }
@@ -89,11 +89,11 @@ const getTransactionsFromBlock = (block: BlockData<FullTransaction>) => {
     return {
       txid: tx.txid,
       block_height: block.height,
-      hash: tx.hash,
-      size: tx.size,
-      locktime: tx.locktime,
-      version: tx.version,
-      vsize: tx.vsize,
+      hash: tx.hash ?? tx.txid,
+      size: tx.size ?? 0,
+      locktime: tx.locktime ?? 0,
+      version: tx.version ?? 1,
+      vsize: tx.vsize ?? tx.size ?? 0,
       vin: tx.vin.map((input) => {
         return {
           txid: input.txid,
@@ -103,15 +103,16 @@ const getTransactionsFromBlock = (block: BlockData<FullTransaction>) => {
           sequence: input.sequence,
         };
       }),
-      vout: tx.vout.map((output) => {
-        if (!output.scriptPubKey.addresses) return;
-
-        return {
-          scriptPubKey: output.scriptPubKey,
-          n: output.n,
-          value: output.value,
-        };
-      }),
+      vout: tx.vout
+        .map((output) => {
+          if (!output.scriptPubKey?.addresses) return null;
+          return {
+            scriptPubKey: output.scriptPubKey,
+            n: output.n,
+            value: output.value,
+          };
+        })
+        .filter((o): o is NonNullable<typeof o> => o != null),
     };
   }) as Transaction[];
 
@@ -229,6 +230,11 @@ export const runIndexer = async (models: Models) => {
       currentBlockNum++;
     } catch (error) {
       log(`Error processing block ${currentBlockNum}`);
+      log(String(error));
+      if (error && typeof error === "object" && "response" in error) {
+        const ax = (error as { response?: { data?: unknown } }).response;
+        if (ax?.data) log(JSON.stringify(ax.data));
+      }
       log("Waiting for new blocks...");
 
       // Wait for new blocks using sleep from ./utils

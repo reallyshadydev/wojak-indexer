@@ -46,6 +46,7 @@ export const createApiServer = async (models: Models) => {
   app.use("/transaction", Routers.TransactionRouter);
   app.use("/address", Routers.AddressRouter);
   app.use("/holders", Routers.HoldersRouter);
+  app.use("/network", Routers.NetworkRouter);
 
   app.get("/", (request: Request, response: Response) => {
     response.status(200).send("Hello World");
